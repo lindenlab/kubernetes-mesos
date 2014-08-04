@@ -426,7 +426,7 @@ func (k *KubernetesScheduler) ListPods(selector labels.Selector) ([]api.Pod, err
 		pod := *(task.Pod)
 
 		var l labels.Set = pod.Labels
-		if selector.Matches(l) || selector.Empty() {
+		if selector.Matches(l) {
 			result = append(result, *(task.Pod))
 		}
 	}
@@ -436,7 +436,7 @@ func (k *KubernetesScheduler) ListPods(selector labels.Selector) ([]api.Pod, err
 		pod := *(task.Pod)
 
 		var l labels.Set = pod.Labels
-		if selector.Matches(l) || selector.Empty() {
+		if selector.Matches(l) {
 			result = append(result, *(task.Pod))
 		}
 	}
