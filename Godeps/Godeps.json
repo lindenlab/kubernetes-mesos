@@ -74,7 +74,7 @@
 			"Rev": "46bb48cf13945f28f4af63ef55f7aac66d059127"
 		},
 		{
-			"ImportPath": "github.com/GoogleCloudPlatform/kubernetes/pkg/kubelet",
+			"ImportPath": "github.com/mesosphere/kubernetes/pkg/kubelet",
 			"Rev": "46bb48cf13945f28f4af63ef55f7aac66d059127"
 		},
 		{
