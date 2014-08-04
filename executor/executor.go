@@ -29,6 +29,7 @@ type kuberTask struct {
 type KubernetesExecutor struct {
 	kl         *kubelet.Kubelet // the kubelet instance.
 	updateChan chan kubelet.PodUpdate
+	eventChan  chan kubelet.Event
 	driver     mesos.ExecutorDriver
 	registered bool
 	tasks      map[string]*kuberTask
@@ -40,6 +41,7 @@ func New(driver mesos.ExecutorDriver, kl *kubelet.Kubelet) *KubernetesExecutor {
 	return &KubernetesExecutor{
 		kl:         kl,
 		updateChan: make(chan kubelet.PodUpdate, defaultChanSize),
+		eventChan:  make(chan kubelet.Event, defaultChanSize),
 		driver:     driver,
 		registered: false,
 		tasks:      make(map[string]*kuberTask),
@@ -48,7 +50,20 @@ func New(driver mesos.ExecutorDriver, kl *kubelet.Kubelet) *KubernetesExecutor {
 
 // Runkubelet runs the kubelet.
 func (k *KubernetesExecutor) RunKubelet() {
-	k.kl.Run(k.updateChan)
+
+	go func() {
+		for {
+			event := <-k.eventChan
+			if event.Status == kubelet.PodFailed {
+				log.V(2).Infof("Pod launch failed: %s", event.Message)
+				if event.Pod != "" {
+					log.Warningf("Pod %s failed to launch", event.Pod)
+				}
+			}
+		}
+	}()
+
+	k.kl.Run(k.updateChan, k.eventChan)
 }
 
 func (k *KubernetesExecutor) gatherContainerManifests() []api.ContainerManifest {
