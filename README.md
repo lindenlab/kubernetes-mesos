@@ -42,13 +42,14 @@ $ go install github.com/GoogleCloudPlatform/kubernetes/cmd/proxy
 
 ### Start the framework
 
-Assuming your mesos cluster is started, and the master is running on `127.0.1.1:5050`, then:
+Ensure that `$(hostname)` resolves to your host's IP address. Assuming your mesos cluster is started, and the master is running on `127.0.1.1:5050`, then:
 
 ```shell
 $ ./bin/kubernetes-mesos \
   -machines=$(hostname) \
   -mesos_master=127.0.1.1:5050 \
   -executor_path=$(pwd)/bin/kubernetes-executor \
+  -etcd_servers=http://localhost:4001 \
   -proxy_path=$(pwd)/bin/proxy
 ```
 
