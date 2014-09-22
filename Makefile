@@ -94,5 +94,5 @@ install: $(OBJS)
 	/bin/cp -vpf $(PROXY_OBJ) $(DESTDIR)/kubernetes-proxy
 
 clean:
-	rm *.deb
+	rm -f *.deb
 	rm -rf pkg src bin deps
