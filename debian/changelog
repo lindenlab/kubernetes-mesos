@@ -1,0 +1,5 @@
+kubernetes-mesos (0.1-1) unstable; urgency=medium
+
+  * Initial release.
+
+ -- Don Kjer <don@lindenlab.com>  Mon, 22 Sep 2014 23:18:17 +0000

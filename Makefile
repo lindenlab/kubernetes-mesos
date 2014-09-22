@@ -6,49 +6,49 @@ mkfile_path	:= $(abspath $(lastword $(MAKEFILE_LIST)))
 current_dir	:= $(patsubst %/,%,$(dir $(mkfile_path)))
 fail		:= ${MAKE} --no-print-directory --quiet -f $(current_dir)/Makefile error
 
-frmwk_gopath	:= $(shell readlink -f $(current_dir)/../../../..)
-vendor_dir	:= $(current_dir)/third_party
+#frmwk_gopath	:= $(shell readlink -f $(current_dir)/../../../..)
+frmwk_gopath	:= $(current_dir)
 
 # HACK: this version needs to match the k8s version in Godeps.json
 k8s_version	:= 1853c66ddfdfb7d673371e9a2f4be65c066ac81b
 k8s_pkg		:= github.com/GoogleCloudPlatform/kubernetes
 k8s_repo	:= https://$(k8s_pkg).git
-k8s_dir		:= $(vendor_dir)/src/$(k8s_pkg)
+k8s_dir		:= $(frmwk_gopath)/src/$(k8s_pkg)
 k8s_git		:= $(k8s_dir)/.git
-k8s_gopath	:= $(vendor_dir):$(k8s_dir)/Godeps/_workspace
+k8s_gopath	:= $(k8s_dir)/Godeps/_workspace
 
 PROXY_SRC	:= $(k8s_pkg)/cmd/proxy
-PROXY_OBJ	:= $(subst $(k8s_pkg)/cmd/,$(vendor_dir)/bin/,$(PROXY_SRC))
+PROXY_OBJ	:= $(subst $(k8s_pkg)/cmd/,$(frmwk_gopath)/bin/,$(PROXY_SRC))
 
-FRAMEWORK_SRC	:= github.com/mesosphere/kubernetes-mesos/kubernetes-mesos \
-		   github.com/mesosphere/kubernetes-mesos/kubernetes-executor
-FRAMEWORK_OBJ	:= $(subst github.com/mesosphere/kubernetes-mesos/,/pkg/bin/,$(FRAMEWORK_SRC))
+FRAMEWORK_DIR	:= github.com/mesosphere/kubernetes-mesos
+FRAMEWORK_SRC	:= $(FRAMEWORK_DIR)/kubernetes-mesos $(FRAMEWORK_DIR)/kubernetes-executor
+FRAMEWORK_OBJ	:= $(subst $(FRAMEWORK_DIR)/,$(frmwk_gopath)/bin/,$(FRAMEWORK_SRC))
 
 OBJS		:= $(PROXY_OBJ) $(FRAMEWORK_OBJ)
 
 DESTDIR		?= /target
 
-.PHONY: all error require-godep framework require-k8s require-vendor proxy install
+.PHONY: all error require-godep framework require-k8s require-frmwk proxy install require-mesos require-protobuf
 
-ifneq ($(WITH_MESOS_DIR),)
+WITH_DEPS_DIR := $(current_dir)/deps/usr
+MESOS_PKG=mesos_0.20.0.293971_amd64.deb
+MESOS_URL=http://s3-proxy.lindenlab.com/private-builds-secondlife-com/hg/repo/mesos/rev/293971/arch/Linux/debian_repo/$(MESOS_PKG)
 
-CFLAGS		+= -I$(WITH_MESOS_DIR)/include
-CPPFLAGS	+= -I$(WITH_MESOS_DIR)/include
-CXXFLAGS	+= -I$(WITH_MESOS_DIR)/include
-LDFLAGS		+= -L$(WITH_MESOS_DIR)/lib
+CFLAGS		+= -I$(WITH_DEPS_DIR)/include
+CPPFLAGS	+= -I$(WITH_DEPS_DIR)/include
+CXXFLAGS	+= -I$(WITH_DEPS_DIR)/include
+LDFLAGS		+= -L$(WITH_DEPS_DIR)/lib
 
-CGO_CFLAGS	+= -I$(WITH_MESOS_DIR)/include
-CGO_CPPFLAGS	+= -I$(WITH_MESOS_DIR)/include
-CGO_CXXFLAGS	+= -I$(WITH_MESOS_DIR)/include
-CGO_LDFLAGS	+= -L$(WITH_MESOS_DIR)/lib
+CGO_CFLAGS	+= -I$(WITH_DEPS_DIR)/include
+CGO_CPPFLAGS	+= -I$(WITH_DEPS_DIR)/include
+CGO_CXXFLAGS	+= -I$(WITH_DEPS_DIR)/include
+CGO_LDFLAGS	+= -L$(WITH_DEPS_DIR)/lib
 
-WITH_MESOS_CGO_FLAGS :=  \
+WITH_DEPS_CGO_FLAGS :=  \
 	  CGO_CFLAGS="$(CGO_CFLAGS)" \
 	  CGO_CPPFLAGS="$(CGO_CPPFLAGS)" \
 	  CGO_CXXFLAGS="$(CGO_CXXFLAGS)" \
 	  CGO_LDFLAGS="$(CGO_LDFLAGS)"
-
-endif
 
 all: $(OBJS)
 
@@ -57,28 +57,42 @@ error:
 	false
 
 require-godep:
-	@which godep >/dev/null || ${fail} MSG="Missing godep tool, aborting"
+	env GOPATH=$(frmwk_gopath) go get github.com/tools/godep
 
 proxy: $(PROXY_OBJ)
 
 $(PROXY_OBJ): require-k8s
-	env GOPATH=$(k8s_gopath)$${GOPATH:+:$$GOPATH} go install $(PROXY_SRC)
+	env GOPATH=$(k8s_gopath):$(frmwk_gopath)$${GOPATH:+:$$GOPATH} go install $(PROXY_SRC)
 
 require-k8s: | $(k8s_git)
 
-$(k8s_git): require-vendor
+$(k8s_git): require-frmwk
 	mkdir -p $(k8s_dir)
 	test -d $(k8s_git) || git clone $(k8s_repo) $(k8s_dir)
 	cd $(k8s_dir) && git checkout $(k8s_version)
 
-require-vendor:
+require-frmwk:
+	test -L src/$(FRAMEWORK_DIR) || ( mkdir -p src/$$(dirname $(FRAMEWORK_DIR)) && ln -sf $(current_dir) src/$$(dirname $(FRAMEWORK_DIR))/$$(basename $(FRAMEWORK_DIR)) )
 
 framework: $(FRAMEWORK_OBJ)
 
-$(FRAMEWORK_OBJ): require-godep
-	env GOPATH=$(frmwk_gopath):$(k8s_gopath)$${GOPATH:+:$$GOPATH} $(WITH_MESOS_CGO_FLAGS) \
-	  godep get github.com/mesosphere/kubernetes-mesos/$(notdir $@)
+require-mesos:
+	test "$(MESOS_URL)" = "" -o -d deps/usr/include/mesos || ( wget http://s3-proxy.lindenlab.com/private-builds-secondlife-com/hg/repo/mesos/rev/293971/arch/Linux/debian_repo/mesos_0.20.0.293971_amd64.deb && dpkg-deb --extract mesos_0.20.0.293971_amd64.deb deps )
+
+require-protobuf:
+	test -d deps/usr/include/google/protobuf || ( apt-get download libprotobuf-dev && dpkg-deb --extract libprotobuf-dev_*deb deps )
+
+$(FRAMEWORK_OBJ): require-godep require-mesos require-protobuf
+	env PATH=$(frmwk_gopath)/bin:$${PATH:+:$$PATH} \
+		GOPATH=$(frmwk_gopath):$(k8s_gopath)$${GOPATH:+:$$GOPATH} \
+		$(WITH_DEPS_CGO_FLAGS) \
+	 godep get github.com/mesosphere/kubernetes-mesos/$(notdir $@)
 
 install: $(OBJS)
 	mkdir -p $(DESTDIR)
-	/bin/cp -vpf -t $(DESTDIR) $(OBJS)
+	/bin/cp -vpf -t $(DESTDIR) $(FRAMEWORK_OBJ)
+	/bin/cp -vpf $(PROXY_OBJ) $(DESTDIR)/kubernetes-proxy
+
+clean:
+	rm *.deb
+	rm -rf pkg src bin deps

@@ -1,0 +1,13 @@
+Source: kubernetes-mesos
+Maintainer: Don Kjer <don@lindenlab.com>
+Section: misc
+Priority: optional
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9), golang, git, wget, gcc
+
+Package: kubernetes-mesos
+Architecture: amd64
+Depends: ${shlibs:Depends}, ${misc:Depends},
+ mesos (>= 0.20.0)
+Description: Kubernetes-mesos package
+ Kubernetes mesos-framework and executor.
