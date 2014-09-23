@@ -31,8 +31,6 @@ DESTDIR		?= /target
 .PHONY: all error require-godep framework require-k8s require-frmwk proxy install require-mesos require-protobuf
 
 WITH_DEPS_DIR := $(current_dir)/deps/usr
-MESOS_PKG=mesos_0.20.0.293971_amd64.deb
-MESOS_URL=http://s3-proxy.lindenlab.com/private-builds-secondlife-com/hg/repo/mesos/rev/293971/arch/Linux/debian_repo/$(MESOS_PKG)
 
 CFLAGS		+= -I$(WITH_DEPS_DIR)/include
 CPPFLAGS	+= -I$(WITH_DEPS_DIR)/include
@@ -77,7 +75,9 @@ require-frmwk:
 framework: $(FRAMEWORK_OBJ)
 
 require-mesos:
-	test "$(MESOS_URL)" = "" -o -d deps/usr/include/mesos || ( wget http://s3-proxy.lindenlab.com/private-builds-secondlife-com/hg/repo/mesos/rev/293971/arch/Linux/debian_repo/mesos_0.20.0.293971_amd64.deb && dpkg-deb --extract mesos_0.20.0.293971_amd64.deb deps )
+	test -d deps/usr/include/mesos || ( \
+		wget $$(curl $$(cat ../dependencies/mesos/result.html  | grep 'URL=' | sed -e 's/.*URL=\(.*\)".*/\1/' -e 's/html/json/')  |  python -c "import json, sys; debs=json.loads(sys.stdin.read())['arch']['Linux']['result']['debian_repo']; print [v['url'] for (k, v) in debs.items() if k.startswith('mesos_')][0]" ) \
+		&& dpkg-deb --extract mesos_*.deb deps )
 
 require-protobuf:
 	test -d deps/usr/include/google/protobuf || ( apt-get download libprotobuf-dev && dpkg-deb --extract libprotobuf-dev_*deb deps )
