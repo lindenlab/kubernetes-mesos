@@ -92,7 +92,7 @@ $(FRAMEWORK_OBJ): require-godep require-mesos require-protobuf
 install: $(OBJS)
 	mkdir -p $(DESTDIR)
 	/bin/cp -vpf -t $(DESTDIR) $(FRAMEWORK_OBJ)
-	/bin/cp -vpf $(PROXY_OBJ) $(DESTDIR)/kubernetes-proxy
+	/bin/cp -vpf $(PROXY_OBJ) $(DESTDIR)/proxy
 
 clean:
 	rm -f *.deb
