@@ -35,12 +35,12 @@ WITH_DEPS_DIR := $(current_dir)/deps/usr
 CFLAGS		+= -I$(WITH_DEPS_DIR)/include
 CPPFLAGS	+= -I$(WITH_DEPS_DIR)/include
 CXXFLAGS	+= -I$(WITH_DEPS_DIR)/include
-LDFLAGS		+= -L$(WITH_DEPS_DIR)/lib
+LDFLAGS		+= -L$(WITH_DEPS_DIR)/lib -L$(WITH_DEPS_DIR)/lib/$(shell dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null) -lprotobuf
 
 CGO_CFLAGS	+= -I$(WITH_DEPS_DIR)/include
 CGO_CPPFLAGS	+= -I$(WITH_DEPS_DIR)/include
 CGO_CXXFLAGS	+= -I$(WITH_DEPS_DIR)/include
-CGO_LDFLAGS	+= -L$(WITH_DEPS_DIR)/lib
+CGO_LDFLAGS		+= -L$(WITH_DEPS_DIR)/lib -L$(WITH_DEPS_DIR)/lib/$(shell dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null) -lprotobuf
 
 WITH_DEPS_CGO_FLAGS :=  \
 	  CGO_CFLAGS="$(CGO_CFLAGS)" \
@@ -81,6 +81,7 @@ require-mesos:
 
 require-protobuf:
 	test -d deps/usr/include/google/protobuf || ( apt-get download libprotobuf-dev && dpkg-deb --extract libprotobuf-dev_*deb deps )
+	test -d deps/usr/share/doc/libprotobuf9 || ( apt-get download libprotobuf9 && dpkg-deb --extract libprotobuf9_*deb deps )
 
 $(FRAMEWORK_OBJ): require-godep require-mesos require-protobuf
 	env PATH=$(frmwk_gopath)/bin:$${PATH:+:$$PATH} \

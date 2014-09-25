@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 override_dh_shlibdeps:
-	dh_shlibdeps -- -ldeps/usr/lib  --ignore-missing-info
+	dh_shlibdeps -- -ldeps/usr/lib -ldeps/usr/lib/$(shell dpkg-architecture -qDEB_HOST_MULTIARCH 2>/dev/null)  --ignore-missing-info
 
 override_dh_auto_install:
 	mkdir -p $$(pwd)/debian/kubernetes-mesos/usr/bin
