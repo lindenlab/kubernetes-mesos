@@ -146,12 +146,12 @@ func main() {
 
 	// Create mesos scheduler driver.
 	executor := &mesos.ExecutorInfo{
-		ExecutorId: &mesos.ExecutorID{Value: proto.String("KubeleteExecutorID")},
+		ExecutorId: &mesos.ExecutorID{Value: proto.String("KubeletExecutorID")},
 		Command: &mesos.CommandInfo{
 			Value: proto.String(executorCommand),
 			Uris: []*mesos.CommandInfo_URI{
-				{Value: &executorURI},
-				{Value: &proxyURI},
+				{Value: &executorURI, Executable: proto.Bool(true)},
+				{Value: &proxyURI, Executable: proto.Bool(true)},
 			},
 		},
 		Name:   proto.String("Kubelet Executor"),

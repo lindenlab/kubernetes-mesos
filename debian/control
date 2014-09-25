@@ -8,6 +8,7 @@ Build-Depends: debhelper (>= 9), golang-go, git, wget, gcc, curl
 Package: kubernetes-mesos
 Architecture: amd64
 Depends: ${shlibs:Depends}, ${misc:Depends},
- mesos (>= 0.20.0)
+ mesos (>= 0.20.1),
+ uuid-runtime
 Description: Kubernetes-mesos package
  Kubernetes mesos-framework and executor.

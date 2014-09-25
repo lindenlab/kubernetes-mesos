@@ -76,7 +76,7 @@ framework: $(FRAMEWORK_OBJ)
 
 require-mesos:
 	test -d deps/usr/include/mesos || ( \
-		wget $$(curl $$(cat ../dependencies/mesos/result.html  | grep 'URL=' | sed -e 's/.*URL=\(.*\)".*/\1/' -e 's/html/json/')  |  python -c "import json, sys; debs=json.loads(sys.stdin.read())['arch']['Linux']['result']['debian_repo']; print [v['url'] for (k, v) in debs.items() if k.startswith('mesos_')][0]" ) \
+		wget $$(curl $$(curl http://s3-proxy.lindenlab.com/private-builds-secondlife-com/hg/repo/mesos/latest.html | grep 'URL=' | sed -e 's/.*URL=\(.*\)".*/\1/' -e 's/html/json/')  |  python -c "import json, sys; debs=json.loads(sys.stdin.read())['arch']['Linux']['result']['debian_repo']; print [v['url'] for (k, v) in debs.items() if k.startswith('mesos_')][0]" ) \
 		&& dpkg-deb --extract mesos_*.deb deps )
 
 require-protobuf:
