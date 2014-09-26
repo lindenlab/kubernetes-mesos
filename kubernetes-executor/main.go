@@ -89,7 +89,7 @@ func main() {
 		}
 	}
 
-	kl := kubelet.NewMainKubelet(hostname, dockerClient, nil, etcdClient, "/", *syncFrequency, *allowPrivileged)
+	kl := kubelet.NewMainKubelet(hostname, dockerClient, nil, etcdClient, "/var/lib/kubelet", *syncFrequency, *allowPrivileged)
 
 	driver := new(mesos.MesosExecutorDriver)
 	kubeletExecutor := executor.New(driver, kl)
