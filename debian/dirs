@@ -1,2 +1,3 @@
 usr/bin
+usr/libexec/kubernetes-mesos
 var/lib/kubelet

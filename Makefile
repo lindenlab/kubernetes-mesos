@@ -22,10 +22,13 @@ PROXY_SRC	:= $(k8s_pkg)/cmd/proxy
 PROXY_OBJ	:= $(subst $(k8s_pkg)/cmd/,$(frmwk_gopath)/bin/,$(PROXY_SRC))
 
 FRAMEWORK_DIR	:= github.com/mesosphere/kubernetes-mesos
-FRAMEWORK_SRC	:= $(FRAMEWORK_DIR)/kubernetes-mesos $(FRAMEWORK_DIR)/kubernetes-executor
+FRAMEWORK_SRC	:= $(FRAMEWORK_DIR)/kubernetes-mesos
 FRAMEWORK_OBJ	:= $(subst $(FRAMEWORK_DIR)/,$(frmwk_gopath)/bin/,$(FRAMEWORK_SRC))
 
-OBJS		:= $(PROXY_OBJ) $(FRAMEWORK_OBJ)
+EXECUTOR_SRC	:= $(FRAMEWORK_DIR)/kubernetes-executor
+EXECUTOR_OBJ	:= $(subst $(FRAMEWORK_DIR)/,$(frmwk_gopath)/bin/,$(EXECUTOR_SRC))
+
+OBJS		:= $(PROXY_OBJ) $(FRAMEWORK_OBJ) $(EXECUTOR_OBJ)
 
 DESTDIR		?= /target
 
@@ -73,7 +76,19 @@ $(k8s_git): require-frmwk
 require-frmwk:
 	test -L src/$(FRAMEWORK_DIR) || ( mkdir -p src/$$(dirname $(FRAMEWORK_DIR)) && ln -sf $(current_dir) src/$$(dirname $(FRAMEWORK_DIR))/$$(basename $(FRAMEWORK_DIR)) )
 
-framework: $(FRAMEWORK_OBJ)
+framework: $(EXECUTOR_OBJ) $(FRAMEWORK_OBJ)
+
+$(EXECUTOR_OBJ): require-godep require-mesos require-protobuf
+	env PATH=$(frmwk_gopath)/bin:$${PATH:+:$$PATH} \
+		GOPATH=$(frmwk_gopath):$(k8s_gopath)$${GOPATH:+:$$GOPATH} \
+		$(WITH_DEPS_CGO_FLAGS) \
+	 godep get github.com/mesosphere/kubernetes-mesos/$(notdir $@)
+
+$(FRAMEWORK_OBJ): require-godep require-mesos require-protobuf
+	env PATH=$(frmwk_gopath)/bin:$${PATH:+:$$PATH} \
+		GOPATH=$(frmwk_gopath):$(k8s_gopath)$${GOPATH:+:$$GOPATH} \
+		$(WITH_DEPS_CGO_FLAGS) \
+	 godep get github.com/mesosphere/kubernetes-mesos/$(notdir $@)
 
 require-mesos:
 	test -d deps/usr/include/mesos || ( \
@@ -84,16 +99,10 @@ require-protobuf:
 	test -d deps/usr/include/google/protobuf || ( apt-get download libprotobuf-dev && dpkg-deb --extract libprotobuf-dev_*deb deps )
 	test -d deps/usr/share/doc/libprotobuf9 || ( apt-get download libprotobuf9 && dpkg-deb --extract libprotobuf9_*deb deps )
 
-$(FRAMEWORK_OBJ): require-godep require-mesos require-protobuf
-	env PATH=$(frmwk_gopath)/bin:$${PATH:+:$$PATH} \
-		GOPATH=$(frmwk_gopath):$(k8s_gopath)$${GOPATH:+:$$GOPATH} \
-		$(WITH_DEPS_CGO_FLAGS) \
-	 godep get github.com/mesosphere/kubernetes-mesos/$(notdir $@)
-
 install: $(OBJS)
-	mkdir -p $(DESTDIR)
-	/bin/cp -vpf -t $(DESTDIR) $(FRAMEWORK_OBJ)
-	/bin/cp -vpf $(PROXY_OBJ) $(DESTDIR)/proxy
+	/bin/cp -vpf -t $(DESTDIR)/bin $(FRAMEWORK_OBJ)
+	/bin/cp -vpf -t $(DESTDIR)/libexec/kubernetes-mesos $(EXECUTOR_OBJ)
+	/bin/cp -vpf -t $(DESTDIR)/libexec/kubernetes-mesos $(PROXY_OBJ)
 
 clean:
 	rm -f *.deb
