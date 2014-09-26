@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/api"
+	"github.com/GoogleCloudPlatform/kubernetes/pkg/capabilities"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/kubelet"
 	kconfig "github.com/GoogleCloudPlatform/kubernetes/pkg/kubelet/config"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/tools"
@@ -46,6 +47,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Couldn't connnect to docker.")
 	}
+
+	capabilities.Initialize(capabilities.Capabilities{
+		AllowPrivileged: *allowPrivileged,
+	})
 
 	hostname := *hostnameOverride
 	if hostname == "" {
@@ -89,7 +94,7 @@ func main() {
 		}
 	}
 
-	kl := kubelet.NewMainKubelet(hostname, dockerClient, nil, etcdClient, "/var/lib/kubelet", *syncFrequency, *allowPrivileged)
+	kl := kubelet.NewMainKubelet(hostname, dockerClient, nil, etcdClient, "/var/lib/kubelet", *syncFrequency)
 
 	driver := new(mesos.MesosExecutorDriver)
 	kubeletExecutor := executor.New(driver, kl)

@@ -1,3 +1,9 @@
+kubernetes-mesos (0.3-1) unstable; urgency=medium
+
+  * Bumping up to kubernetes v0.3 
+
+ -- Don Kjer <don@lindenlab.com>  Fri, 26 Sep 2014 02:48:50 +0000
+
 kubernetes-mesos (0.1-1) unstable; urgency=medium
 
   * Initial release.

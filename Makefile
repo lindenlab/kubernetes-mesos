@@ -10,9 +10,10 @@ fail		:= ${MAKE} --no-print-directory --quiet -f $(current_dir)/Makefile error
 frmwk_gopath	:= $(current_dir)
 
 # HACK: this version needs to match the k8s version in Godeps.json
-k8s_version	:= 1853c66ddfdfb7d673371e9a2f4be65c066ac81b
+k8s_version	:= release_v0.3
 k8s_pkg		:= github.com/GoogleCloudPlatform/kubernetes
-k8s_repo	:= https://$(k8s_pkg).git
+#k8s_repo	:= https://$(k8s_pkg).git
+k8s_repo	:= https://github.com/lindenlab/kubernetes.git
 k8s_dir		:= $(frmwk_gopath)/src/$(k8s_pkg)
 k8s_git		:= $(k8s_dir)/.git
 k8s_gopath	:= $(k8s_dir)/Godeps/_workspace

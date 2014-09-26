@@ -583,30 +583,32 @@ func (k *KubernetesScheduler) handleSchedulingError(pod *api.Pod, err error) {
 func (k *KubernetesScheduler) ListPods(selector labels.Selector) (*api.PodList, error) {
 	log.V(2).Infof("List pods for '%v'\n", selector)
 
+	// TODO(nnielsen): Wire up check in finished tasks
+	return k.ListPodsPredicate(func(pod *api.Pod) bool {
+		return (selector.Matches(labels.Set(pod.Labels)) || selector.Empty());
+	})
+}
+
+
+// ListPodsPredicate obtains a list of pods for which filter returns true.
+func (k *KubernetesScheduler)  ListPodsPredicate(filter func(*api.Pod) bool) (*api.PodList, error) {
 	k.RLock()
 	defer k.RUnlock()
 
 	var result []api.Pod
 	for _, task := range k.runningTasks {
-		pod := *(task.Pod)
-
-		var l labels.Set = pod.Labels
-		if selector.Matches(l) || selector.Empty() {
+		if filter(task.Pod) {
 			result = append(result, *(task.Pod))
 		}
 	}
 
 	// TODO(nnielsen): Refactor tasks append for the three lists.
 	for _, task := range k.pendingTasks {
-		pod := *(task.Pod)
-
-		var l labels.Set = pod.Labels
-		if selector.Matches(l) || selector.Empty() {
+		if filter(task.Pod) {
 			result = append(result, *(task.Pod))
 		}
 	}
 
-	// TODO(nnielsen): Wire up check in finished tasks
 
 	log.V(2).Infof("Returning pods: '%v'\n", result)
 

@@ -39,6 +39,7 @@ import (
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/registry/pod"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/registry/service"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/runtime"
+	"github.com/GoogleCloudPlatform/kubernetes/pkg/api/latest"
 	endpoint "github.com/GoogleCloudPlatform/kubernetes/pkg/service"
 
 	kscheduler "github.com/GoogleCloudPlatform/kubernetes/pkg/scheduler"
@@ -54,7 +55,7 @@ import (
 var (
 	port                        = flag.Uint("port", 8080, "The port to listen on.  Default 8080.")
 	address                     = flag.String("address", "127.0.0.1", "The address on the local server to listen to. Default 127.0.0.1")
-	apiPrefix                   = flag.String("api_prefix", "/api/v1beta1", "The prefix for API requests on the server. Default '/api/v1beta1'")
+	apiPrefix                   = flag.String("api_prefix", "/api/v1beta2", "The prefix for API requests on the server. Default '/api/v1beta2'")
 	mesosMaster                 = flag.String("mesos_master", "localhost:5050", "Location of leading Mesos master")
 	executorPath                = flag.String("executor_path", "", "Location of the kubernetes executor executable")
 	proxyPath                   = flag.String("proxy_path", "", "Location of the kubernetes proxy executable")
@@ -133,7 +134,7 @@ func main() {
 		Port:   *minionPort,
 	}
 
-	client, err := client.New("http://"+net.JoinHostPort(*address, strconv.Itoa(int(*port))), nil)
+	client, err := client.New("http://"+net.JoinHostPort(*address, strconv.Itoa(int(*port))), "", nil)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -161,8 +162,8 @@ func main() {
 	etcdClient := goetcd.NewClient(etcdServerList)
 	helper := tools.EtcdHelper{
 		etcdClient,
-		runtime.DefaultCodec,
-		runtime.DefaultResourceVersioner,
+		latest.Codec,
+		latest.ResourceVersioner,
 	}
 	mesosPodScheduler := kmscheduler.New(executor, kmscheduler.FCFSScheduleFunc, client, helper)
 	driver := &mesos.MesosSchedulerDriver{
@@ -191,22 +192,22 @@ func main() {
 		Cloud:         cloud,
 		Minions:       machineList,
 		PodInfoGetter: podInfoGetter,
-		EtcdServers:   etcdServerList,
-	}, etcdClient)
+		EtcdHelper:    helper,
+	}, helper)
 	log.Fatal(m.run(net.JoinHostPort(*address, strconv.Itoa(int(*port))), *apiPrefix, helper.Codec))
 }
 
-func newKubernetesMaster(scheduler *kmscheduler.KubernetesScheduler, c *master.Config, etcdClient tools.EtcdClient) *kubernetesMaster {
+func newKubernetesMaster(scheduler *kmscheduler.KubernetesScheduler, c *master.Config, etcdHelper tools.EtcdHelper) *kubernetesMaster {
 	var m *kubernetesMaster
 
 	minionRegistry := minion.NewRegistry(c.Minions) // TODO(adam): Mimic minionRegistryMaker(c)?
 
 	m = &kubernetesMaster{
 		podRegistry:        scheduler,
-		controllerRegistry: etcd.NewRegistry(etcdClient),
-		serviceRegistry:    etcd.NewRegistry(etcdClient),
+		controllerRegistry: etcd.NewRegistry(etcdHelper),
+		serviceRegistry:    etcd.NewRegistry(etcdHelper),
 		minionRegistry:     minionRegistry,
-		bindingRegistry:    etcd.NewRegistry(etcdClient),
+		bindingRegistry:    etcd.NewRegistry(etcdHelper),
 		client:             c.Client,
 		scheduler:          scheduler,
 	}
