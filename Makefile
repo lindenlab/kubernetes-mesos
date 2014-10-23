@@ -30,6 +30,7 @@ EXECUTOR_OBJ	:= $(subst $(FRAMEWORK_DIR)/,$(frmwk_gopath)/bin/,$(EXECUTOR_SRC))
 
 OBJS		:= $(PROXY_OBJ) $(FRAMEWORK_OBJ) $(EXECUTOR_OBJ)
 
+# TODO: make this something more reasonable
 DESTDIR		?= /target
 
 .PHONY: all error require-godep framework require-k8s require-frmwk proxy install require-mesos require-protobuf
