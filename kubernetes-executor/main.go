@@ -40,7 +40,7 @@ func main() {
 	} else if len(os.Getenv("DOCKER_HOST")) > 0 {
 		endpoint = os.Getenv("DOCKER_HOST")
 	} else {
-		endpoint = "tcp://172.16.42.1:2375"
+		endpoint = "unix:///var/run/docker.sock"
 	}
 	log.Infof("Connecting to docker on %s", endpoint)
 	dockerClient, err := docker.NewClient(endpoint)
